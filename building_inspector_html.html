@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Building Inspector">
+    <title>Building Component Inspector</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #f0f7ff 0%, #e0d5ff 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 56rem;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .header {
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+        .sync-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        .sync-saved {
+            background: #d1fae5;
+            color: #047857;
+        }
+        .sync-saving {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .sync-error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .nav-tabs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+        .nav-btn {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .nav-btn.active {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+        .nav-btn.inactive {
+            background: white;
+            color: #374151;
+        }
+        .nav-btn.inactive:hover {
+            background: #f3f4f6;
+        }
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .card h2 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+        textarea, input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f9fafb;
+            border-radius: 0.5rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+        }
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+        .btn-secondary {
+            background: #3b82f6;
+            color: white;
+            flex: 1;
+        }
+        .btn-secondary:hover {
+            background: #2563eb;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            flex: 1;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover {
+            border-color: #4f46e5;
+        }
+        .upload-area input {
+            display: none;
+        }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .photo-item {
+            position: relative;
+        }
+        .photo-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+        .photo-remove {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .component-list {
+            margin-top: 2rem;
+        }
+        .component-item {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .component-item:hover {
+            border-color: #4f46e5;
+        }
+        .component-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+        .component-name {
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .component-meta {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .condition-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .condition-excellent {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .condition-good {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+        .condition-fair {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .condition-poor {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+        .component-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        .table th {
+            background: #f3f4f6;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #d1d5db;
+        }
+        .table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tr:hover {
+            background: #f9fafb;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .info-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            color: #1e3a8a;
+        }
+        .success-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+        }
+        .step {
+            display: flex;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 1rem;
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .step-num {
+            background: #4f46e5;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step-content h3 {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+        .step-content p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function ComponentInspector() {
+            const [currentStep, setCurrentStep] = useState('steps');
+            const [components, setComponents] = useState([]);
+            const [formData, setFormData] = useState({
+                name: '',
+                floorLevel: '',
+                installYear: '',
+                condition: 'Good',
+                photoNotes: '',
+                ownerNotes: '',
+                lastReplacedYear: '',
+                photos: []
+            });
+            const [editingId, setEditingId] = useState(null);
+            const [agmNotes, setAgmNotes] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [syncStatus, setSyncStatus] = useState('saved');
+
+            const conditions = ['Excellent', 'Good', 'Fair', 'Poor', 'Failed'];
+
+            useEffect(() => {
+                loadFromStorage();
+            }, []);
+
+            useEffect(() => {
+                saveToStorage();
+            }, [components, agmNotes]);
+
+            const saveToStorage = async () => {
+                try {
+                    setSyncStatus('saving');
+                    const dataToSave = {
+                        components,
+                        agmNotes,
+                        timestamp: new Date().toISOString()
+                    };
+                    await window.storage.set('building-inspection-data', JSON.stringify(dataToSave), false);
+                    setSyncStatus('saved');
+                } catch (error) {
+                    console.log('Using localStorage fallback');
+                    localStorage.setItem('building-inspection-data', JSON.stringify(dataToSave));
+                    setSyncStatus('saved');
+                }
+            };
+
+            const loadFromStorage = async () => {
+                try {
+                    setLoading(true);
+                    let data = null;
+                    
+                    // Try window.storage first
+                    if (window.storage) {
+                        try {
+                            const result = await window.storage.get('building-inspection-data', false);
+                            if (result && result.value) {
+                                data = JSON.parse(result.value);
+                            }
+                        } catch (e) {
+                            console.log('window.storage not available');
+                        }
+                    }
+                    
+                    // Fallback to localStorage
+                    if (!data) {
+                        const saved = localStorage.getItem('building-inspection-data');
+                        if (saved) {
+                            data = JSON.parse(saved);
+                        }
+                    }
+                    
+                    if (data) {
+                        setComponents(data.components || []);
+                        setAgmNotes(data.agmNotes || '');
+                    }
+                } catch (error) {
+                    console.error('Load error:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handlePhotoUpload = (e) => {
+                const files = Array.from(e.target.files || []);
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const photoData = {
+                            id: Date.now() + Math.random(),
+                            data: event.target.result,
+                            name: file.name,
+                            timestamp: new Date().toLocaleString()
+                        };
+                        setFormData(prev => ({
+                            ...prev,
+                            photos: [...prev.photos, photoData]
+                        }));
+                    };
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            const handleRemovePhoto = (photoId) => {
+                setFormData(prev => ({
+                    ...prev,
+                    photos: prev.photos.filter(p => p.id !== photoId)
+                }));
+            };
+
+            const processComponentText = (text) => {
+                const lines = text.split('\n').filter(line => line.trim().length > 0);
+                const newComponents = lines.map(line => ({
+                    name: line.trim(),
+                    floorLevel: '',
+                    installYear: '',
+                    condition: 'Good',
+                    photoNotes: '',
+                    ownerNotes: '',
+                    lastReplacedYear: '',
+                    photos: [],
+                    id: Date.now() + Math.random()
+                }));
+
+                setComponents([...components, ...newComponents]);
+                alert('Successfully imported ' + newComponents.length + ' components!');
+            };
+
+            const handleImportComponentList = (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const text = event.target.result;
+                        processComponentText(text);
+                    } catch (error) {
+                        alert('Error importing file.');
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+            const handleAddComponent = () => {
+                if (formData.name.trim()) {
+                    if (editingId) {
+                        setComponents(components.map(c => c.id === editingId ? { ...formData, id: editingId } : c));
+                        setEditingId(null);
+                    } else {
+                        setComponents([...components, { ...formData, id: Date.now() }]);
+                    }
+                    setFormData({
+                        name: '',
+                        floorLevel: '',
+                        installYear: '',
+                        condition: 'Good',
+                        photoNotes: '',
+                        ownerNotes: '',
+                        lastReplacedYear: '',
+                        photos: []
+                    });
+                }
+            };
+
+            const handleEditComponent = (component) => {
+                setFormData(component);
+                setEditingId(component.id);
+                setCurrentStep('document');
+            };
+
+            const handleDeleteComponent = (id) => {
+                setComponents(components.filter(c => c.id !== id));
+            };
+
+            const calculateAge = (installYear) => {
+                if (!installYear) return '';
+                const currentYear = new Date().getFullYear();
+                const years = currentYear - parseInt(installYear);
+                return years > 0 ? years + ' years' : 'Less than 1 year';
+            };
+
+            const downloadReport = () => {
+                const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Building Component Inspection Report</title><style>body { font-family: Arial, sans-serif; margin: 20px; color: #333; } h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; } h2 { color: #34495e; margin-top: 30px; } .agm-section { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 15px 0; white-space: pre-wrap; } .component { page-break-inside: avoid; border: 1px solid #bdc3c7; padding: 15px; margin: 15px 0; border-radius: 5px; } .component-title { font-size: 18px; font-weight: bold; color: #2c3e50; } .condition { padding: 5px 10px; border-radius: 3px; font-weight: bold; display: inline-block; } .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; } .info-item { background: #f8f9fa; padding: 8px; border-left: 3px solid #3498db; } .info-label { font-weight: bold; color: #2c3e50; } .photos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 10px 0; } .photo-item { border: 1px solid #ddd; padding: 5px; border-radius: 3px; } .photo-item img { max-width: 100%; height: auto; display: block; margin-bottom: 5px; } table { width: 100%; border-collapse: collapse; margin: 20px 0; } th { background: #34495e; color: white; padding: 10px; text-align: left; } td { border-bottom: 1px solid #bdc3c7; padding: 10px; } tr:nth-child(even) { background: #ecf0f1; }</style></head><body><h1>Building Component Inspection Report</h1><p><strong>Report Generated:</strong> ' + new Date().toLocaleString() + '</p>' + (agmNotes ? '<h2>AGM & Financial Minutes Summary</h2><div class="agm-section">' + agmNotes + '</div>' : '') + (components.length > 0 ? '<h2>Components Overview</h2><table><thead><tr><th>Component</th><th>Floor Level</th><th>Age</th><th>Condition</th></tr></thead><tbody>' + components.map(comp => '<tr><td>' + comp.name + '</td><td>' + comp.floorLevel + '</td><td>' + calculateAge(comp.installYear) + '</td><td>' + comp.condition + '</td></tr>').join('') + '</tbody></table><h2>Detailed Component Assessments</h2>' + components.map(comp => '<div class="component"><div class="component-title">' + comp.name + ' (' + comp.floorLevel + ')</div><div class="condition">' + comp.condition + '</div><div class="info-grid"><div class="info-item"><div class="info-label">Installation Year</div><div>' + (comp.installYear || 'N/A') + '</div></div><div class="info-item"><div class="info-label">Age</div><div>' + (calculateAge(comp.installYear) || 'Unknown') + '</div></div><div class="info-item"><div class="info-label">Last Repaired</div><div>' + (comp.lastReplacedYear || 'N/A') + '</div></div></div>' + (comp.photoNotes ? '<p><strong>Observations:</strong> ' + comp.photoNotes + '</p>' : '') + (comp.ownerNotes ? '<p><strong>Owner Notes:</strong> ' + comp.ownerNotes + '</p>' : '') + (comp.photos && comp.photos.length > 0 ? '<div class="photos-grid">' + comp.photos.map(photo => '<div class="photo-item"><img src="' + photo.data + '" alt="photo"><small>' + photo.name + '</small></div>').join('') + '</div>' : '') + '</div>').join('') : '') + '</body></html>';
+                
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Building_Inspection_Report_' + new Date().toISOString().split('T')[0] + '.html';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            };
+
+            if (loading) {
+                return (
+                    <div className="loading">
+                        <div>
+                            <div className="spinner"></div>
+                            <p>Loading your inspection data...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>Building Component Inspector</h1>
+                        <p>Organize your AGM research, component documentation, and assessment</p>
+                        <div className={'sync-status sync-' + syncStatus}>
+                            {syncStatus === 'saved' ? '✓ All saved' : syncStatus === 'saving' ? 'Saving...' : 'Error'}
+                        </div>
+                    </div>
+
+                    <div className="nav-tabs">
+                        {['steps', 'agm', 'document', 'review'].map((step, idx) => {
+                            const stepNames = ['Process', 'AGM Notes', 'Document', 'Review'];
+                            const completed = 
+                                (step === 'agm' && agmNotes.length > 0) ||
+                                (step === 'document' && components.length > 0) ||
+                                (step === 'review' && components.length > 0);
+                            
+                            return (
+                                <button
+                                    key={step}
+                                    onClick={() => setCurrentStep(step)}
+                                    className={'nav-btn ' + (currentStep === step ? 'active' : 'inactive')}
+                                >
+                                    {completed ? '✓' : '○'} {stepNames[idx]}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {currentStep === 'steps' && (
+                        <div className="card">
+                            <h2>Inspection Process</h2>
+                            <div>
+                                {[
+                                    { num: 1, title: 'Review Documents', desc: 'Read AGM and financial minutes' },
+                                    { num: 2, title: 'Document AGM Findings', desc: 'Record relevant information' },
+                                    { num: 3, title: 'Inspect & Photograph', desc: 'Take photos and assess condition' },
+                                    { num: 4, title: 'Interview Owners', desc: 'Gather maintenance insights' },
+                                    { num: 5, title: 'Determine Age', desc: 'Calculate effective age' },
+                                    { num: 6, title: 'Review & Download', desc: 'Compile and download report' }
+                                ].map((step) => (
+                                    <div key={step.num} className="step">
+                                        <div className="step-num">{step.num}</div>
+                                        <div className="step-content">
+                                            <h3>{step.title}</h3>
+                                            <p>{step.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button className="btn btn-primary" onClick={() => setCurrentStep('agm')}>
+                                Start Process →
+                            </button>
+                        </div>
+                    )}
+
+                    {currentStep === 'agm' && (
+                        <div className="card">
+                            <h2>AGM & Financial Minutes</h2>
+                            <p style={{marginBottom: '1rem', color: '#6b7280'}}>Record key information from AGM minutes and financial documents</p>
+                            <div className="form-group">
+                                <textarea
+                                    value={agmNotes}
+                                    onChange={(e) => setAgmNotes(e.target.value)}
+                                    placeholder="Document findings:&#10;- Past replacements and repairs&#10;- Planned capital projects&#10;- Component warranties&#10;- Maintenance records&#10;- Known issues..."
+                                    style={{height: '300px', marginBottom: '1rem'}}
+                                ></textarea>
+                                <button className="btn btn-primary" onClick={() => setCurrentStep('document')}>
+                                    Continue to Components →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {currentStep === 'document' && (
+                        <div className="card">
+                            <h2>Document Components</h2>
+                            
+                            <div className="info-box" style={{marginBottom: '1.5rem', marginTop: 0}}>
+                                <label>Import Component List (Optional)</label>
+                                <input
+                                    type="file"
+                                    accept=".txt,.csv,.pdf"
+                                    onChange={handleImportComponentList}
+                                    id="component-import"
+                                    style={{display: 'none'}}
+                                />
+                                <label htmlFor="component-import" style={{marginTop: '0.5rem'}}>
+                                    <button type="button" className="btn btn-secondary">
+                                        📤 Upload List
+                                    </button>
+                                </label>
+                                <p style={{fontSize: '0.875rem', marginTop: '0.5rem'}}>Upload .pdf, .txt, or .csv with one component per line</p>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Component Name *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="e.g., Main Roof, Furnace"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Floor Level</label>
+                                    <input
+                                        type="text"
+                                        value={formData.floorLevel}
+                                        onChange={(e) => setFormData({ ...formData, floorLevel: e.target.value })}
+                                        placeholder="e.g., Basement, Level 1"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Installation Year</label>
+                                    <input
+                                        type="number"
+                                        value={formData.installYear}
+                                        onChange={(e) => setFormData({ ...formData, installYear: e.target.value })}
+                                        placeholder="e.g., 2015"
+                                        min="1900"
+                                        max={new Date().getFullYear()}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Last Replaced Year</label>
+                                    <input
+                                        type="number"
+                                        value={formData.lastReplacedYear}
+                                        onChange={(e) => setFormData({ ...formData, lastReplacedYear: e.target.value })}
+                                        placeholder="e.g., 2020"
+                                        min="1900"
+                                        max={new Date().getFullYear()}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Current Condition</label>
+                                    <select
+                                        value={formData.condition}
+                                        onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                                    >
+                                        {conditions.map(cond => <option key={cond}>{cond}</option>)}
+                                    </select>
+                                </div>
+
+                                {formData.installYear && (
+                                    <div className="form-group">
+                                        <label>Effective Age</label>
+                                        <div style={{padding: '0.75rem', background: 'white', borderRadius: '0.5rem', border: '1px solid #d1d5db', color: '#374151'}}>
+                                            {calculateAge(formData.installYear)}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{marginBottom: '1.5rem'}}>
+                                <label>Upload Photos</label>
+                                <div className="upload-area">
+                                    <input
+                                        type="file"
+                                        id="photo-input"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={handlePhotoUpload}
+                                    />
+                                    <label htmlFor="photo-input">
+                                        <p style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>📸</p>
+                                        <p style={{fontWeight: 600, marginBottom: '0.25rem'}}>Click to upload or drag and drop</p>
+                                        <p style={{fontSize: '0.875rem', color: '#6b7280'}}>PNG, JPG, GIF</p>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {formData.photos.length > 0 && (
+                                <div style={{marginBottom: '1.5rem'}}>
+                                    <label>Photos ({formData.photos.length})</label>
+                                    <div className="photo-grid">
+                                        {formData.photos.map(photo => (
+                                            <div key={photo.id} className="photo-item">
+                                                <img src={photo.data} alt="preview" style={{width: '100%', height: '100px', objectFit: 'cover'}} />
+                                                <button
+                                                    onClick={() => handleRemovePhoto(photo.id)}
+                                                    className="photo-remove"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="form-row" style={{gridTemplateColumns: '1fr'}}>
+                                <div className="form-group">
+                                    <label>Photo & Observation Notes</label>
+                                    <textarea
+                                        value={formData.photoNotes}
+                                        onChange={(e) => setFormData({ ...formData, photoNotes: e.target.value })}
+                                        placeholder="What you observed in photos, signs of wear..."
+                                        style={{height: '120px'}}
+                                    ></textarea>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Owner/Representative Notes</label>
+                                    <textarea
+                                        value={formData.ownerNotes}
+                                        onChange={(e) => setFormData({ ...formData, ownerNotes: e.target.value })}
+                                        placeholder="Information from conversations..."
+                                        style={{height: '120px'}}
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            <button className="btn btn-primary" onClick={handleAddComponent} style={{marginBottom: '1.5rem'}}>
+                                {editingId ? 'Update Component' : 'Add Component'}
+                            </button>
+
+                            {components.length > 0 && (
+                                <div className="component-list">
+                                    <h3 style={{fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', marginBottom: '1rem'}}>
+                                        Components Documented ({components.length})
+                                    </h3>
+                                    {components.map(comp => (
+                                        <div key={comp.id} className="component-item">
+                                            <div className="component-header">
+                                                <div>
+                                                    <div className="component-name">{comp.name}</div>
+                                                    <div className="component-meta">{comp.floorLevel} • {calculateAge(comp.installYear)}</div>
+                                                </div>
+                                                <span className={'condition-badge condition-' + comp.condition.toLowerCase()}>
+                                                    {comp.condition}
+                                                </span>
+                                            </div>
+                                            {comp.photos && comp.photos.length > 0 && (
+                                                <p style={{fontSize: '0.875rem', color: '#6b7280', margin: '0.5rem 0'}}>📷 {comp.photos.length} photo(s)</p>
+                                            )}
+                                            {comp.photoNotes && <p style={{fontSize: '0.875rem', color: '#1f2937', margin: '0.5rem 0'}}><strong>Observations:</strong> {comp.photoNotes}</p>}
+                                            {comp.ownerNotes && <p style={{fontSize: '0.875rem', color: '#1f2937', margin: '0.5rem 0'}}><strong>Owner Notes:</strong> {comp.ownerNotes}</p>}
+                                            <div className="component-actions">
+                                                <button className="btn btn-secondary" onClick={() => handleEditComponent(comp)}>
+                                                    Edit
+                                                </button>
+                                                <button className="btn btn-danger" onClick={() => handleDeleteComponent(comp.id)}>
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {currentStep === 'review' && (
+                        <div className="card">
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+                                <h2 style={{margin: 0}}>Review & Download</h2>
+                                <button className="btn btn-success" onClick={downloadReport}>
+                                    📥 Download Report
+                                </button>
+                            </div>
+                            
+                            {agmNotes && (
+                                <div style={{marginBottom: '2rem'}}>
+                                    <h3 style={{fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', marginBottom: '1rem'}}>AGM & Financial Notes</h3>
+                                    <div style={{padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem', whiteSpace: 'pre-wrap', color: '#374151'}}>
+                                        {agmNotes}
+                                    </div>
+                                </div>
+                            )}
+
+                            {components.length > 0 && (
+                                <div>
+                                    <h3 style={{fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', marginBottom: '1rem'}}>Components Summary</h3>
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Component</th>
+                                                <th>Floor Level</th>
+                                                <th>Age</th>
+                                                <th>Condition</th>
+                                                <th>Photos</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {components.map(comp => (
+                                                <tr key={comp.id}>
+                                                    <td>{comp.name}</td>
+                                                    <td>{comp.floorLevel}</td>
+                                                    <td>{calculateAge(comp.installYear)}</td>
+                                                    <td>{comp.condition}</td>
+                                                    <td>{(comp.photos && comp.photos.length) || 0}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <div className="success-box">
+                                        <strong>✓ Report Ready:</strong> Click Download Report to save a complete HTML report with all photos and component details.
+                                    </div>
+                                </div>
+                            )}
+
+                            {components.length === 0 && (
+                                <p style={{textAlign: 'center', color: '#6b7280', padding: '3rem 0'}}>
+                                    No components documented yet. Go back to the Document tab to add components.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<ComponentInspector />);
+    </script>
+</body>
+</html>
